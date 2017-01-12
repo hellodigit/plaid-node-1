@@ -160,9 +160,6 @@ Plaid._publicRequest = function(options, callback) {
     $requestOptions = R.assoc('body', options.body, $requestOptions);
   }
 
-  var client_id = this.client_id;
-  var secret = this.secret;
-
   Plaid.interceptors.request.run($requestOptions, function() {
     request($requestOptions, function(err, res, $body) {
       Plaid.interceptors.response.run(res, function() {
