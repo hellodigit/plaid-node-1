@@ -1,10 +1,10 @@
 'use strict';
 
-var querystring = require('querystring');
-
 var async = require('async');
 var R = require('ramda');
 var request = require('request');
+var url = require('url');
+var querystring = require('querystring');
 
 var Plaid = module.exports = {};
 
@@ -160,7 +160,7 @@ Plaid._publicRequest = function(options, callback) {
     $requestOptions = R.assoc('body', options.body, $requestOptions);
   }
 
-  Plaid.interceptors.request.run($requestOptions, function() {
+  Plaid.interceptors.request.run(Object.assign({}, $requestOptions, url.parse(options.uri)), function() {
     request($requestOptions, function(err, res, $body) {
       Plaid.interceptors.response.run(res, function() {
         if (err != null) {
