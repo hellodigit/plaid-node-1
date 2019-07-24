@@ -110,6 +110,14 @@ plaidClient.getIdentity(access_token, cb);
 plaidClient.getIncome(access_token, cb);
 // getCreditDetails(String, Function)
 plaidClient.getCreditDetails(access_token, cb);
+// getLiabilities(String, Function)
+plaidClient.getLiabilities(access_token, cb);
+
+// getHoldings(String, Function)
+plaidClient.getHoldings(access_token, cb);
+// getInvestmentTransactions(String, Date(YYYY-MM-DD), Date(YYYY-MM-DD),
+// Object?, Function)
+plaidClient.getInvestmentTransactions(access_token, start_date, end_date, options, cb);
 
 // getTransactions(String, Date(YYYY-MM-DD), Date(YYYY-MM-DD), Object?, Function)
 plaidClient.getTransactions(access_token, start_date, end_date, options, cb);
@@ -133,6 +141,8 @@ plaidClient.getCategories(cb);
 // resetLogin(String, Function)
 // Sandbox-only endpoint to trigger an `ITEM_LOGIN_REQUIRED` error
 plaidClient.resetLogin(access_token, cb);
+// Sandbox-only endpoint to trigger a webhook for an Item
+plaidClient.sandboxItemFireWebhook(access_token, webhook_code, cb);
 // Sandbox-only endpoint to create a `public_token`. Useful for writing integration tests without running Link.
 plaidClient.sandboxPublicTokenCreate(institution_id, initial_products, options, cb);
 ```
@@ -160,7 +170,7 @@ between a Plaid error and a standard Error instance:
 ```javascript
 function callback(err, response) {
   if (err != null) {
-    if (plaid.isPlaidError(err)) {
+    if (err instanceof plaid.PlaidError) {
       // This is a Plaid error
       console.log(err.error_code + ': ' + err.error_message);
     } else {
@@ -266,7 +276,7 @@ app.post('/plaid_exchange', (req, res) => {
     });
   }).catch(err => {
     // Indicates a network or runtime error.
-    if (!plaid.isPlaidError(err)) {
+    if (!(err instanceof plaid.PlaidError)) {
       res.sendStatus(500);
       return;
     }

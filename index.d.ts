@@ -25,7 +25,12 @@ declare module 'plaid' {
     offset?: number;
   }
 
-  interface TransactionsAllRequestOptions extends ItemRequestOptions {}
+  interface InvestmentTransactionsRequestOptions extends ItemRequestOptions {
+    count?: number;
+    offset?: number;
+  }
+
+  interface GetAllTransactionsRequestOptions extends ItemRequestOptions {}
 
   interface AssetReportUser {
     client_user_id?: string | null;
@@ -42,6 +47,8 @@ declare module 'plaid' {
     webhook?: string;
     user?: AssetReportUser;
   }
+
+  type AssetReportRefreshOptions = AssetReportCreateOptions;
 
   // DATA TYPES //////////////////////////////////////////////////////////////
 
@@ -60,8 +67,30 @@ declare module 'plaid' {
       current: number | null;
       limit: number | null;
       iso_currency_code: string | null;
-      official_currency_code: string | null;
+      unofficial_currency_code: string | null;
     };
+  }
+
+  interface Security {
+    security_id: string;
+    cusip: string | null;
+    sedol: string | null;
+    isin: string | null;
+    institution_security_id: string | null;
+    institution_id: string | null;
+    proxy_security_id: string | null;
+    name: string | null;
+    ticker_symbol: string | null;
+    is_cash_equivalent: boolean | null;
+    type: string | null;
+    close_price: number | null;
+    close_price_as_of: string | null;
+    iso_currency_code: string | null;
+    unofficial_currency_code: string | null;
+  }
+
+  interface AccountWithOwners extends Account {
+    owners: Array<Identity>;
   }
 
   interface Category {
@@ -70,7 +99,16 @@ declare module 'plaid' {
     category_id: string;
   }
 
-  interface PlaidError {
+  export class PlaidError extends Error {
+    error_type: string;
+    error_code: string;
+    error_message: string;
+    display_message: string | null;
+    causes?: Array<Cause>;
+  }
+
+  // IPlaidError is a dupliate of PlaidError that is not an instance of Error.
+  export interface IPlaidError {
     error_type: string;
     error_code: string;
     error_message: string;
@@ -84,14 +122,14 @@ declare module 'plaid' {
     cause: Cause;
   }
 
-  interface Cause extends PlaidError {
+  interface Cause extends IPlaidError {
     item_id: string;
   }
 
   interface Item {
     available_products: Array<string>;
     billed_products: Array<string>;
-    error: PlaidError | null;
+    error: IPlaidError | null;
     institution_id: string;
     item_id: string;
     webhook: string;
@@ -110,6 +148,7 @@ declare module 'plaid' {
     mfa: Array<string>;
     name: string;
     products: Array<string>;
+    country_codes: Array<string>;
   }
 
   interface InstitutionWithDisplayData extends Institution {
@@ -121,14 +160,10 @@ declare module 'plaid' {
     url_forgotten_password: string | null;
   }
 
-  interface InstitutionWithContactData extends Institution {
-    addresses: Array<{
-      city: string;
-      country: string;
-      state: string;
-      street: Array<string>;
-      zip: string;
-    }>;
+  interface InstitutionWithInstitutionData extends Institution {
+    logo: string;
+    primary_color: string;
+    url: string;
   }
 
   interface IncomeStream {
@@ -155,29 +190,17 @@ declare module 'plaid' {
     phone_numbers: Array<PhoneNumber>;
   }
 
-  interface AccountIdentity {
-    addresses: Array<Address>;
-    emails: Array<Email>;
-    names: Array<string>;
-    phone_numbers: Array<PhoneNumber>;
-  }
-
   interface Address {
-    accounts: Array<string>;
-    data: AddressData;
-    primary: boolean;
-  }
-
-  interface AccountAddress {
     data: AddressData;
     primary: boolean;
   }
 
   interface AddressData {
-    city: string;
-    state: string;
-    zip: string;
-    street: string;
+    city: string | null;
+    region: string | null;
+    postal_code: string | null;
+    street: string | null;
+    country: string | null;
   }
 
   interface Email {
@@ -186,10 +209,60 @@ declare module 'plaid' {
     type: string;
   }
 
+  interface Holding {
+    account_id: string;
+    security_id: string;
+    institution_value: number | null;
+    institution_price: number | null;
+    quantity: number | null;
+    institution_price_as_of: string | null;
+    cost_basis: number | null;
+    iso_currency_code: string | null;
+    unofficial_currency_code: string | null;
+  }
+
+  interface InvestmentTransaction {
+    investment_transaction_id: string;
+    account_id: string;
+    security_id: string;
+    cancel_transaction_id: string;
+    date: Iso8601DateString;
+    name: string | null;
+    quantity: number | null;
+    amount: number | null;
+    price: number | null;
+    fees: number | null;
+    type: string | null;
+    iso_currency_code: string | null;
+    unofficial_currency_code: string | null;
+  }
+
   interface PhoneNumber {
     data: string;
     primary: boolean;
     type: string;
+  }
+
+  interface TransactionLocation {
+    address: string | null;
+    city: string | null;
+    lat: number | null;
+    lon: number | null;
+    region: string | null;
+    store_number: string | null;
+    postal_code: string | null;
+    country: string | null;
+  }
+
+  interface TransactionPaymentMeta {
+    by_order_of: string | null;
+    payee: string | null;
+    payer: string | null;
+    payment_method: string | null;
+    payment_processor: string | null;
+    ppd_id: string | null;
+    reason: string | null;
+    reference_number: string | null
   }
 
   interface Transaction {
@@ -197,30 +270,13 @@ declare module 'plaid' {
     account_owner: string | null;
     amount: number | null;
     iso_currency_code: string | null;
-    official_currency_code: string | null;
+    unofficial_currency_code: string | null;
     category: Array<string> | null;
     category_id: string | null;
     date: Iso8601DateString;
-    location: {
-      address: string | null;
-      city: string | null;
-      lat: number | null;
-      lon: number | null;
-      state: string | null;
-      store_number: string | null;
-      zip: string | null;
-    };
+    location: TransactionLocation;
     name: string | null;
-    payment_meta: {
-      by_order_of: string | null;
-      payee: string | null;
-      payer: string | null;
-      payment_method: string | null;
-      payment_processor: string | null;
-      ppd_id: string | null;
-      reason: string | null;
-      reference_number: string | null
-    };
+    payment_meta: TransactionPaymentMeta;
     pending: boolean | null;
     pending_transaction_id: string | null;
     transaction_id: string;
@@ -252,7 +308,32 @@ declare module 'plaid' {
     days_available: number;
     historical_balances: Array<HistoricalBalance>;
     transactions: Array<AssetReportTransaction>;
-    owners: Array<Identity>;
+    owners: Array<AssetsIdentity>;
+  }
+
+  // Different from "Identity", as it belongs with "Assets"
+  // which is only for US.
+  interface AssetsIdentity {
+    addresses: Array<AssetsAddress>;
+    emails: Array<Email>;
+    names: Array<string>;
+    phone_numbers: Array<PhoneNumber>;
+  }
+
+  // Different from "Address", as it belongs with "Assets"
+  // which is only for US.
+  interface AssetsAddress {
+    data: AssetsAddressData;
+    primary: boolean;
+  }
+
+  // Different from "AddressData", as it belongs with "Assets"
+  // which is only for US.
+  interface AssetsAddressData {
+    city: string;
+    state: string;
+    zip: string;
+    street: string;
   }
 
   interface HistoricalBalance {
@@ -267,6 +348,108 @@ declare module 'plaid' {
     original_description: string | null;
     pending: boolean | null;
     amount: number | null;
+
+    // These fields only exist in an Asset Report with Insights. For more, see
+    // https://plaid.com/docs/#retrieve-json-report-request.
+    account_owner?: string;
+    category?: Array<string>;
+    category_id?: string;
+    date_transacted?: string;
+    location?: AssetTransactionLocation;
+    name?: string;
+    payment_meta?: TransactionPaymentMeta;
+    pending_transaction_id?: string;
+    transaction_type?: string;
+  }
+
+  // Different from "TransactionLocation", as it belongs with "Assets"
+  // which is only for US.
+  interface AssetTransactionLocation {
+    address: string | null;
+    city: string | null;
+    lat: number | null;
+    lon: number | null;
+    state: string | null;
+    store_number: string | null;
+    zip: string | null;
+  }
+
+  interface ACHNumbers {
+    account: string;
+    account_id: string;
+    routing: string;
+    wire_routing: string;
+  }
+
+  interface EFTNumbers {
+    account: string;
+    account_id: string;
+    institution: string;
+    branch: string;
+  }
+
+  interface InternationalNumbers {
+    account_id: string;
+    iban: string;
+    bic: string;
+  }
+
+  interface BACSNumbers {
+    account_id: string;
+    account: string;
+    sort_code: string;
+  }
+
+  interface StudentLoanStatus {
+    type: string | null;
+    end_date: Iso8601DateString | null;
+  }
+
+  interface StudentLoanRepaymentPlan {
+    type: string;
+    description: string;
+  }
+
+  interface PslfStatus {
+    estimated_eligibility_date: Iso8601DateString | null;
+    payments_made: number | null;
+    payments_remaining: number | null;
+  }
+
+  interface StudentLoanServicerAddress {
+    city: string | null;
+    country: string | null;
+    postal_code: string | null;
+    region: string | null;
+    street: string | null;
+  }
+
+  interface StudentLoanLiability {
+    account_id: string | null;
+    account_number: string | null;
+    disbursement_dates: Array<Iso8601DateString> | null;
+    expected_payoff_date: Iso8601DateString | null;
+    guarantor: string | null;
+    interest_rate_percentage: number | null;
+    is_overdue: boolean | null;
+    last_payment_amount: number | null;
+    last_payment_date: Iso8601DateString | null;
+    last_statement_balance: number | null;
+    last_statement_issue_date: Iso8601DateString | null;
+    loan_name: string | null;
+    loan_status: StudentLoanStatus | null;
+    minimum_payment_amount: number | null;
+    next_payment_due_date: Iso8601DateString | null;
+    origination_date: Iso8601DateString | null;
+    origination_principal_amount: number | null;
+    outstanding_interest_amount: number | null;
+    payment_reference_number: string | null;
+    pslf_status: PslfStatus | null;
+    repayment_plan: StudentLoanRepaymentPlan | null;
+    sequence_number: string | null;
+    servicer_address: StudentLoanServicerAddress | null;
+    ytd_interest_paid: number | null;
+    ytd_principal_paid: number | null;
   }
 
   // RESPONSES
@@ -280,14 +463,43 @@ declare module 'plaid' {
     item: Item;
   }
 
+  interface InvestmentsResponse extends AccountsResponse {
+    securities: Array<Security>;
+  }
+
+  interface AuthResponse extends BaseResponse {
+    accounts: Array<Account>;
+    item: Item;
+    numbers: {
+      ach: Array<ACHNumbers>;
+      eft: Array<EFTNumbers>;
+      international: Array<InternationalNumbers>;
+      bacs: Array<BACSNumbers>;
+    }
+  }
+
   interface CreditDetailsResponse extends AccountsResponse {}
+
+  interface HoldingsResponse extends InvestmentsResponse{
+    holdings: Array<Holding>;
+  }
+  interface InvestmentTransactionsResponse extends InvestmentsResponse {
+    investment_transactions: Array<InvestmentTransaction>;
+    total_investment_transactions: number;
+  }
 
   interface IncomeResponse extends AccountsResponse {
     income: Income;
   }
 
   interface IdentityResponse extends AccountsResponse {
-    identity: Identity;
+    accounts: Array<AccountWithOwners>;
+  }
+
+  interface LiabilitiesResponse extends AccountsResponse {
+    liabilities: {
+      student: Array<StudentLoanLiability>;
+    }
   }
 
   interface ItemResponse extends BaseResponse {
@@ -300,6 +512,10 @@ declare module 'plaid' {
 
   interface CreateProcessorTokenResponse extends BaseResponse {
     processor_token: string;
+  }
+
+  interface CreateStripeTokenResponse extends BaseResponse {
+    stripe_bank_account_token: string;
   }
 
   interface RotateAccessTokenResponse extends BaseResponse {
@@ -342,19 +558,36 @@ declare module 'plaid' {
     item: Item;
   }
 
+  // omitting extending the BaseResponse since there isn't a single request_id
+  interface TransactionsAllResponse {
+    accounts: Array<Account>;
+    item: Item;
+    total_transactions: number;
+    transactions: Array<Transaction>;
+  }
+
   interface AssetReportCreateResponse extends BaseResponse {
     asset_report_id: string;
     asset_report_token: string;
   }
+
+  type AssetReportFilterResponse = AssetReportCreateResponse;
+  type AssetReportRefreshResponse = AssetReportCreateResponse;
 
   interface AssetReportGetResponse extends BaseResponse {
     report: AssetReport;
     warnings: Array<Warning>;
   }
 
+  interface AssetReportGetPdfResponse extends BaseResponse {
+    buffer: Buffer;
+  }
+
   interface AuditCopyCreateResponse extends BaseResponse {
     audit_copy_token: string;
   }
+
+  type AuditCopyGetResponse = AssetReportGetResponse;
 
   interface AuditCopyRemoveResponse extends BaseResponse {
     removed: boolean;
@@ -368,13 +601,21 @@ declare module 'plaid' {
     public_token: string;
   }
 
+  interface SandboxItemFireWebhookResponse extends BaseResponse {
+    webhook_fired: boolean;
+  }
+
+  interface ClientOptions extends CoreOptions {
+    version?: '2019-05-29';
+  }
+
   class Client {
     constructor (
       clientId: string,
       secret: string,
       publicKey: string,
       env: string,
-      options?: CoreOptions,
+      options?: ClientOptions,
     )
 
     exchangePublicToken(publicToken: string): Promise<TokenResponse>;
@@ -396,11 +637,11 @@ declare module 'plaid' {
 
     createStripeToken(accessToken: string,
                       accountId: string,
-                      cb: Callback<CreateProcessorTokenResponse>,
+                      cb: Callback<CreateStripeTokenResponse>,
     ): void;
     createStripeToken(accessToken: string,
                       accountId: string,
-    ): Promise<CreateProcessorTokenResponse>;
+    ): Promise<CreateStripeTokenResponse>;
 
     invalidateAccessToken: AccessTokenFn<RotateAccessTokenResponse>;
 
@@ -448,13 +689,24 @@ declare module 'plaid' {
 
     getAuth(accessToken: string,
             options?: ItemRequestOptions,
-    ): Promise<AccountsResponse>;
+    ): Promise<AuthResponse>;
     getAuth(accessToken: string,
-            cb: Callback<AccountsResponse>,
+            cb: Callback<AuthResponse>,
     ): void;
     getAuth(accessToken: string,
             options: ItemRequestOptions,
-            cb: Callback<AccountsResponse>,
+            cb: Callback<AuthResponse>,
+    ): void;
+
+    getLiabilities(accessToken: string,
+                   options?: ItemRequestOptions,
+    ): Promise<LiabilitiesResponse>;
+    getLiabilities(accessToken: string,
+                   cb: Callback<LiabilitiesResponse>,
+    ): void;
+    getLiabilities(accessToken: string,
+                   options: ItemRequestOptions,
+                   cb: Callback<LiabilitiesResponse>,
     ): void;
 
     // getIdentity(String, Function)
@@ -463,33 +715,81 @@ declare module 'plaid' {
     getIncome: AccessTokenFn<IncomeResponse>;
     // getCreditDetails(String, Function)
     getCreditDetails: AccessTokenFn<CreditDetailsResponse>;
-
-    // createAssetReport([String], Number, Object?, Function)
+    // getHoldings(String, Function)
+    getHoldings: AccessTokenFn<HoldingsResponse>;
+    // getInvestmentTransactions(String, Date, Date, Function)
+    getInvestmentTransactions(accessToken: string,
+                              startDate: Iso8601DateString,
+                              endDate: Iso8601DateString,
+                              options?: InvestmentTransactionsRequestOptions,
+    ): Promise<InvestmentTransactionsResponse>;
+    // createAssetReport([String], Number, Object, Function)
     createAssetReport(access_tokens: Array<string>,
                       days_requested: number,
                       options: AssetReportCreateOptions,
                       cb: Callback<AssetReportCreateResponse>): void;
 
-    // getAssetReport(String, Function)
+    createAssetReport(access_tokens: Array<string>,
+                      days_requested: number,
+                      options: AssetReportCreateOptions): Promise<AssetReportCreateResponse>;
+
+    // filterAssetReport(String, [String], Function)
+    filterAssetReport(asset_report_token: string,
+                      account_ids_to_exclude: Array<string>,
+                      cb: Callback<AssetReportFilterResponse>): void;
+
+    filterAssetReport(asset_report_token: string,
+                      account_ids_to_exclude: Array<string>): Promise<AssetReportFilterResponse>;
+
+    // refreshAssetReport(String, Number, Object, Function)
+    refreshAssetReport(asset_report_token: string,
+                       days_requested: number,
+                       options: AssetReportRefreshOptions,
+                       cb: Callback<AssetReportRefreshResponse>): void;
+
+    refreshAssetReport(asset_report_token: string,
+                       days_requested: number,
+                       options?: AssetReportRefreshOptions): Promise<AssetReportRefreshResponse>;
+
+    // getAssetReport(String, Boolean, Function)
     getAssetReport(asset_report_token: string,
+                   include_insights: boolean,
                    cb: Callback<AssetReportGetResponse>): void;
+
+    getAssetReport(asset_report_token: string,
+                   include_insights: boolean): Promise<AssetReportGetResponse>;
 
     // getAssetReportPdf(String, Function)
     getAssetReportPdf(asset_report_token: string,
-                      cb: Callback<Buffer>): void;
+                      cb: Callback<AssetReportGetPdfResponse>): void;
+
+    getAssetReportPdf(asset_report_token: string): Promise<AssetReportGetPdfResponse>;
 
     // createAuditCopy(String, String, Function)
     createAuditCopy(asset_report_token: string,
                     auditor_id: string,
                     cb: Callback<AuditCopyCreateResponse>): void;
 
+    createAuditCopy(asset_report_token: string,
+                    auditor_id: string): Promise<AuditCopyCreateResponse>;
+
+    // getAuditCopy(String, Function)
+    getAuditCopy(audit_copy_token: string,
+                 cb: Callback<AuditCopyGetResponse>): void;
+
+    getAuditCopy(audit_copy_token: string): Promise<AuditCopyGetResponse>;
+
     // removeAuditCopy(String, Function)
     removeAuditCopy(audit_copy_token: string,
                     cb: Callback<AuditCopyRemoveResponse>): void;
 
+    removeAuditCopy(audit_copy_token: string): Promise<AuditCopyRemoveResponse>;
+
     // removeAssetReport(String, Function)
     removeAssetReport(asset_report_token: string,
                       cb: Callback<AssetReportRemoveResponse>): void;
+
+    removeAssetReport(asset_report_token: string): Promise<AssetReportRemoveResponse>;
 
     // getTransactions(String, Date, Date, Object?, Function)
     getTransactions(accessToken: string,
@@ -513,18 +813,24 @@ declare module 'plaid' {
     getAllTransactions(accessToken: string,
                        startDate: Iso8601DateString,
                        endDate: Iso8601DateString,
-                       options?: TransactionsAllRequestOptions,
-    ): Promise<Array<Transaction>>;
+                       options?: GetAllTransactionsRequestOptions,
+    ): Promise<Array<TransactionsResponse>>;
     getAllTransactions(accessToken: string,
                        startDate: Iso8601DateString,
                        endDate: Iso8601DateString,
-                       cb: Callback<Array<Transaction>>,
+                       cb: Callback<Array<TransactionsResponse>>,
     ): void;
     getAllTransactions(accessToken: string,
                        startDate: Iso8601DateString,
                        endDate: Iso8601DateString,
-                       options: TransactionsAllRequestOptions,
-                       cb: Callback<Array<Transaction>>,
+                       options: GetAllTransactionsRequestOptions,
+                       cb: Callback<Array<TransactionsResponse>>,
+    ): void;
+    getAllTransactions(accessToken: string,
+                       startDate: Iso8601DateString,
+                       endDate: Iso8601DateString,
+                       options: GetAllTransactionsRequestOptions,
+                       cb: Callback<Array<TransactionsResponse>>,
     ): void;
 
     getInstitutions(count: number,
@@ -561,7 +867,7 @@ declare module 'plaid' {
 
     resetLogin: AccessTokenFn<ResetLoginResponse>;
 
-    // sandboxPublicTokenCreate(String, Array<sring>,Object, Function)
+    // sandboxPublicTokenCreate(String, Array<String>, Object, Function)
     sandboxPublicTokenCreate(
       institutionId: string,
       initialProducts: Array<string>,
@@ -569,12 +875,25 @@ declare module 'plaid' {
       cb: Callback<SandboxPublicTokenCreateResponse>,
     ): void;
 
-    // sandboxPublicTokenCreate(String, Array<sring>,Object)
+    // sandboxPublicTokenCreate(String, Array<String>, Object)
     sandboxPublicTokenCreate(
       institutionId: string,
       initialProducts: Array<string>,
       options?: Object,
     ): Promise<SandboxPublicTokenCreateResponse>;
+
+    // sandboxItemFireWebhook(String, String, Function)
+    sandboxItemFireWebhook(
+      access_token: string,
+      webhook_code: string,
+      cb: Callback<SandboxItemFireWebhookResponse>,
+    ): void;
+
+    // sandboxItemFireWebhook(String, String)
+    sandboxItemFireWebhook(
+      access_token: string,
+      webhook_code: string,
+    ): Promise<SandboxItemFireWebhookResponse>;
   }
 
   interface PlaidEnvironments {
@@ -584,6 +903,4 @@ declare module 'plaid' {
     [env: string]: string;
   }
   const environments: PlaidEnvironments;
-
-  export function isPlaidError(err: any): err is PlaidError;
 }
