@@ -1,6 +1,6 @@
 {
   "name": "plaid",
-  "version": "1.1.2",
+  "version": "4.2.0",
   "description": "A node.js client for the Plaid API",
   "keywords": [
     "plaid",
@@ -8,28 +8,39 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git://github.com/plaid/plaid-node.git"
+    "url": "git@github.com:plaid/plaid-node.git"
   },
   "bugs": {
-    "url": "http://github.com/plaid/plaid-node/issues"
+    "url": "https://github.com/plaid/plaid-node/issues"
   },
+  "main": "lib/plaid.js",
   "licenses": [
     {
       "type": "MIT",
       "url": "https://github.com/plaid/plaid-node/blob/master/LICENSE"
     }
   ],
+  "types": "./index.d.ts",
   "dependencies": {
-    "async": "^2.1.4",
-    "ramda": "0.19.x",
-    "request": "2.74.x"
+    "bluebird": "^3.5.1",
+    "ramda": "0.23.x",
+    "request": "^2.74.0",
+    "@types/node": "9.x",
+    "@types/request": "0.0.36"
   },
   "devDependencies": {
+    "async": "2.1.x",
+    "dotenv": "4.0.x",
+    "expect.js": "0.3.x",
     "istanbul": "0.4.x",
-    "jscs": "2.7.x",
-    "jshint": "2.8.x",
-    "mocha": "2.3.x",
-    "proxyquire": "1.7.x",
-    "xyz": "0.5.x"
+    "jscs": "3.0.x",
+    "jshint": "2.9.x",
+    "mocha": "5.x",
+    "moment": "2.19.x",
+    "nock": "9.1.x",
+    "nockingbird": "0.2.x",
+    "sinon": "^4.5.0",
+    "typescript": "2.5.x",
+    "xyz": "2.1.x"
   }
 }
